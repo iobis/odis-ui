@@ -1,2 +1,23 @@
 .DS_Store
 
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+web/dist/
+
+# Environment
+.env
+
+# IDE
+.idea/
+.vscode/

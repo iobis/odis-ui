@@ -1,0 +1,111 @@
+:root {
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  color: #12232b;
+  background: #f3f6f4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.subtitle {
+  color: #4b5d63;
+  margin: 0 0 2rem;
+}
+
+.status {
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  border: 1px solid #d7e0dc;
+  background: #fff;
+  margin-bottom: 2rem;
+  font-size: 0.9rem;
+}
+
+.status.ok {
+  border-color: #0f6e56;
+}
+
+.status.degraded {
+  border-color: #a3401f;
+}
+
+.search-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.search-form input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d7e0dc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.search-form button {
+  padding: 0.5rem 1.25rem;
+  background: #0f6e56;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.search-form button:hover {
+  background: #0c5a47;
+}
+
+.results-meta {
+  color: #4b5d63;
+  margin-bottom: 1rem;
+}
+
+.result-card {
+  background: #fff;
+  border: 1px solid #d7e0dc;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.result-card h2 {
+  font-size: 1.1rem;
+  margin: 0 0 0.25rem;
+}
+
+.result-card .type {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0f6e56;
+}
+
+.result-card p {
+  margin: 0.5rem 0 0;
+  color: #4b5d63;
+  font-size: 0.9rem;
+}
+
+.error {
+  color: #a3401f;
+}

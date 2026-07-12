@@ -1,29 +1,24 @@
-from elasticsearch import AsyncElasticsearch
-
 from app.config import Settings
-from app.domain.search import HealthStatus, SearchFacets, SearchQuery, SearchResponse
+from app.domain.search import HealthStatus, SearchQuery, SearchResponse
 from app.search.elasticsearch.client import create_client
+from app.search.elasticsearch.queries import build_search_body, map_search_response
 
 
 class ElasticsearchBackend:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
-        self._client: AsyncElasticsearch = create_client(settings)
+        self._client = create_client(settings)
 
     @property
     def index(self) -> str:
         return self._settings.es_index
 
     async def search(self, query: SearchQuery) -> SearchResponse:
-        # Stub: full query logic (runtime record_type, facets, pagination) comes later.
-        _ = query
-        return SearchResponse(
-            total=0,
-            facets=SearchFacets(),
-            items=[],
-            page=query.page,
-            size=query.size,
-        )
+        body = build_search_body(query)
+        body["fields"] = ["record_type"]
+        raw = await self._client.search(index=self.index, body=body)
+        payload = raw.body if hasattr(raw, "body") else raw
+        return map_search_response(query, payload)
 
     async def health(self) -> HealthStatus:
         index_reachable = False

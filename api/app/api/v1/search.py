@@ -16,7 +16,7 @@ router = APIRouter(tags=["search"])
 )
 async def search(
     backend: SearchBackendDep,
-    q: Annotated[str | None, Query(description="Full-text search query")] = None,
+    q: Annotated[str | None, Query(description="Search titles (`name`, `schema:name`)")] = None,
     types: Annotated[
         list[str] | None,
         Query(description="Record type filters (repeat param for multiple values)"),
@@ -26,7 +26,7 @@ async def search(
     page: Annotated[int, Query(ge=1, description="Page number")] = 1,
     size: Annotated[int, Query(ge=1, le=50, description="Results per page")] = 20,
 ) -> SearchResponse:
-    """Search the odis_metadata index with optional type and source filters."""
+    """Search record titles in the odis_metadata index with optional type and source filters."""
     query = SearchQuery(
         q=q,
         types=types or [],

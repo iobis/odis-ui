@@ -121,6 +121,23 @@ h1 {
   font-size: 0.85rem;
 }
 
+.result-card .record-url {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.result-card .record-url a {
+  color: #5a7a8a;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.result-card .record-url a:hover {
+  color: #0f6e56;
+  text-decoration: underline;
+}
+
 .result-card p {
   margin: 0.5rem 0 0;
   color: #4b5d63;

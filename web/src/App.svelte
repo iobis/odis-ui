@@ -135,6 +135,11 @@
             {#if item.source?.name}
               <p class="source">{item.source.name}</p>
             {/if}
+            {#if item.url}
+              <p class="record-url">
+                <a href={item.url} target="_blank" rel="noopener noreferrer">{item.url}</a>
+              </p>
+            {/if}
             {#if item.summary}
               <p>{item.summary}</p>
             {/if}

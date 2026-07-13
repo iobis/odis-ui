@@ -11,6 +11,7 @@
     type SearchResponse,
   } from "./lib/api";
   import { buildSearchUrl, parseSearchParams, toggleValue } from "./lib/url";
+  import { formatNumber } from "./lib/format";
   import "./app.css";
 
   let health: HealthStatus | null = $state(null);
@@ -180,7 +181,7 @@
       {/if}
 
       {#if results}
-        <p class="results-meta">{results.total} result{results.total === 1 ? "" : "s"}</p>
+        <p class="results-meta">{formatNumber(results.total)} result{results.total === 1 ? "" : "s"}</p>
         {#each results.items as item (item.id)}
           <article class="result-card">
             <span class="type">{item.type}</span>

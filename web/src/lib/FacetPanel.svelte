@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { SearchFacets } from "./api";
+  import { formatNumber } from "./format";
   import { formatTypeLabel, sourceLabel } from "./labels";
 
   interface Props {
@@ -33,7 +34,7 @@
                 onchange={() => onTypeToggle(bucket.value)}
               />
               <span>{formatTypeLabel(bucket.value)}</span>
-              <span class="count">{bucket.count}</span>
+              <span class="count">{formatNumber(bucket.count)}</span>
             </label>
           </li>
         {/each}
@@ -56,7 +57,7 @@
                 onchange={() => onSourceToggle(bucket.id)}
               />
               <span>{sourceLabel(bucket.id, bucket.name)}</span>
-              <span class="count">{bucket.count}</span>
+              <span class="count">{formatNumber(bucket.count)}</span>
             </label>
           </li>
         {/each}

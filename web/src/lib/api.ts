@@ -86,10 +86,25 @@ async function fetchJson<T>(path: string, params?: Record<string, string | strin
       }
     }
   }
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
+
+  let response: Response;
+  try {
+    response = await fetch(url);
+  } catch {
+    throw new Error(
+      "The search backend cannot be reached. Check your connection or try again later.",
+    );
   }
+
+  if (!response.ok) {
+    if (response.status >= 500) {
+      throw new Error(
+        "The search backend cannot be reached. It may be temporarily unavailable.",
+      );
+    }
+    throw new Error(`Request failed (${response.status}).`);
+  }
+
   return response.json() as Promise<T>;
 }
 

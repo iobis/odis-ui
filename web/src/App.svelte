@@ -52,9 +52,10 @@
 
   async function runSearch(pushUrl = true, append = false) {
     if (append) {
-      if (loading || loadingMore || !hasMore) return;
+      if (loading || !hasMore) return;
       loadingMore = true;
     } else {
+      if (loading) return;
       loading = true;
       searchError = null;
     }
@@ -82,6 +83,7 @@
       } else {
         searchError = e instanceof Error ? e.message : "Search failed";
         results = null;
+        void refreshHealth();
       }
     } finally {
       loading = false;
@@ -90,9 +92,19 @@
   }
 
   async function loadMore() {
-    if (!hasMore || loading || loadingMore) return;
+    if (!hasMore || loading || loadingMore || searchError) return;
     page += 1;
     await runSearch(false, true);
+  }
+
+  async function refreshHealth() {
+    try {
+      health = await getHealth();
+      healthError = null;
+    } catch (e) {
+      healthError = e instanceof Error ? e.message : "Failed to reach API";
+      health = null;
+    }
   }
 
   function applyFromUrl(url: URL) {
@@ -117,13 +129,7 @@
       { rootMargin: "240px" },
     );
 
-    void getHealth()
-      .then((status) => {
-        health = status;
-      })
-      .catch((e) => {
-        healthError = e instanceof Error ? e.message : "Failed to reach API";
-      });
+    void refreshHealth();
 
     const onPopState = () => {
       applyFromUrl(new URL(window.location.href));

@@ -59,6 +59,13 @@ def test_selected_type_filter_uses_post_filter() -> None:
     assert body["post_filter"]["terms"]["@type.keyword"] == ["Dataset", "schema:Dataset"]
 
 
+def test_search_limits_source_fields() -> None:
+    body = build_search_body(SearchQuery(q="marine"))
+    assert "data" in body["_source"]
+    assert "name" in body["_source"]
+    assert "indexed_at" not in body["_source"]
+
+
 def test_map_search_response_decodes_html_entities_in_title() -> None:
     item = map_document_to_item(
         "abc",

@@ -1,4 +1,5 @@
 const API_BASE = import.meta.env.VITE_API_URL ?? "/api/v1";
+const REQUEST_TIMEOUT_MS = 15_000;
 
 export interface HealthStatus {
   status: string;
@@ -88,12 +89,22 @@ async function fetchJson<T>(path: string, params?: Record<string, string | strin
   }
 
   let response: Response;
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
   try {
-    response = await fetch(url);
-  } catch {
+    response = await fetch(url, { signal: controller.signal });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error(
+        "The search backend is not responding. It may be temporarily unavailable.",
+      );
+    }
     throw new Error(
       "The search backend cannot be reached. Check your connection or try again later.",
     );
+  } finally {
+    window.clearTimeout(timeout);
   }
 
   if (!response.ok) {

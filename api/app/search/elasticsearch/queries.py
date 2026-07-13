@@ -35,6 +35,17 @@ HAS_SEARCHABLE_TEXT = {
     }
 }
 
+SEARCH_SOURCE_FIELDS = [
+    "name",
+    "schema:name",
+    "description",
+    "schema:description",
+    "@type",
+    DATASOURCE_FIELD,
+    "url",
+    "data",
+]
+
 
 def _resolved_types(query: SearchQuery) -> list[str]:
     if query.types:
@@ -85,6 +96,7 @@ def build_search_body(query: SearchQuery) -> dict[str, Any]:
         },
         "from": (query.page - 1) * query.size,
         "size": query.size,
+        "_source": SEARCH_SOURCE_FIELDS,
         "aggs": {
             "types": {"terms": {"field": "@type.keyword", "size": 100}},
             "sources": {"terms": {"field": f"{DATASOURCE_FIELD}.keyword", "size": 30}},

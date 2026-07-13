@@ -68,6 +68,22 @@ The bootstrap script:
 
 Open `https://your-domain` after bootstrap completes.
 
+### Updates (after TLS bootstrap)
+
+```bash
+git stash          # only if pull complains about local changes
+git pull
+./scripts/deploy-prod.sh
+```
+
+`deploy-prod.sh` rebuilds containers and regenerates the TLS nginx configs from your `.env` `DOMAIN`. Do **not** run `git stash pop` after pulling — the stashed hotfixes are already in the repo.
+
+Or with pull built in:
+
+```bash
+./scripts/deploy-prod.sh --pull
+```
+
 ### Manual stack control
 
 Without TLS bootstrap (local HTTP-only on port 80):

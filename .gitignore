@@ -17,6 +17,7 @@ web/dist/
 
 # Environment
 .env
+nginx/nginx.prod.https.conf
 
 # IDE
 .idea/

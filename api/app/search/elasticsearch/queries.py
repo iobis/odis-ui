@@ -58,10 +58,53 @@ def _scope_type_filter() -> dict[str, Any]:
     return {"terms": {"@type.keyword": raw_types_for_filter(list(PRIMARY_RECORD_TYPES))}}
 
 
-def _selected_type_post_filter(query: SearchQuery) -> dict[str, Any] | None:
-    if not query.types:
+def _base_filters(query: SearchQuery) -> list[dict[str, Any]]:
+    """Query scope shared by hits and facet counts (excludes user facet selections)."""
+    filters: list[dict[str, Any]] = [_scope_type_filter()]
+    if query.q:
+        filters.append(HAS_SEARCHABLE_TEXT)
+    return filters
+
+
+def _type_facet_filters(query: SearchQuery) -> list[dict[str, Any]]:
+    """Facet filters for type counts: apply datasource selection, not type."""
+    filters = _base_filters(query)
+    if query.sources:
+        filters.append({"terms": {f"{DATASOURCE_FIELD}.keyword": query.sources}})
+    return filters
+
+
+def _source_facet_filters(query: SearchQuery) -> list[dict[str, Any]]:
+    """Facet filters for datasource counts: apply type selection, not datasource."""
+    filters = _base_filters(query)
+    if query.types:
+        filters.append(
+            {"terms": {"@type.keyword": raw_types_for_filter(_resolved_types(query))}}
+        )
+    return filters
+
+
+def _user_post_filter(query: SearchQuery) -> dict[str, Any] | None:
+    """Narrow hits only; facet aggs use disjunctive filters instead."""
+    clauses: list[dict[str, Any]] = []
+    if query.types:
+        clauses.append(
+            {"terms": {"@type.keyword": raw_types_for_filter(_resolved_types(query))}}
+        )
+    if query.sources:
+        clauses.append({"terms": {f"{DATASOURCE_FIELD}.keyword": query.sources}})
+    if not clauses:
         return None
-    return {"terms": {"@type.keyword": raw_types_for_filter(_resolved_types(query))}}
+    if len(clauses) == 1:
+        return clauses[0]
+    return {"bool": {"filter": clauses}}
+
+
+def _filter_agg(filters: list[dict[str, Any]], field: str, size: int) -> dict[str, Any]:
+    return {
+        "filter": {"bool": {"filter": filters}},
+        "aggs": {"buckets": {"terms": {"field": field, "size": size}}},
+    }
 
 
 def _text_clause(query: SearchQuery) -> dict[str, Any]:
@@ -75,13 +118,7 @@ def _text_clause(query: SearchQuery) -> dict[str, Any]:
 
 
 def build_search_body(query: SearchQuery) -> dict[str, Any]:
-    filters: list[dict[str, Any]] = [
-        _scope_type_filter(),
-    ]
-    if query.sources:
-        filters.append({"terms": {f"{DATASOURCE_FIELD}.keyword": query.sources}})
-    if query.q:
-        filters.append(HAS_SEARCHABLE_TEXT)
+    filters = _base_filters(query)
 
     must: list[dict[str, Any]] = []
     if query.q:
@@ -98,12 +135,16 @@ def build_search_body(query: SearchQuery) -> dict[str, Any]:
         "size": query.size,
         "_source": SEARCH_SOURCE_FIELDS,
         "aggs": {
-            "types": {"terms": {"field": "@type.keyword", "size": 100}},
-            "sources": {"terms": {"field": f"{DATASOURCE_FIELD}.keyword", "size": 30}},
+            "types": _filter_agg(_type_facet_filters(query), "@type.keyword", 100),
+            "sources": _filter_agg(
+                _source_facet_filters(query),
+                f"{DATASOURCE_FIELD}.keyword",
+                30,
+            ),
         },
     }
 
-    post_filter = _selected_type_post_filter(query)
+    post_filter = _user_post_filter(query)
     if post_filter is not None:
         body["post_filter"] = post_filter
 
@@ -234,10 +275,12 @@ def map_search_response(
         )
 
     aggs = raw.get("aggregations", {})
-    type_facets = _merge_type_facet_buckets(aggs.get("types", {}).get("buckets", []))
+    type_facets = _merge_type_facet_buckets(
+        aggs.get("types", {}).get("buckets", {}).get("buckets", [])
+    )
     source_facets = [
         SourceFacetBucket(id=str(bucket["key"]), count=bucket["doc_count"])
-        for bucket in aggs.get("sources", {}).get("buckets", [])
+        for bucket in aggs.get("sources", {}).get("buckets", {}).get("buckets", [])
         if bucket.get("key")
     ]
 

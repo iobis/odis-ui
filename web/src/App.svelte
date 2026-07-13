@@ -6,6 +6,7 @@
   import TypeBadge from "./lib/TypeBadge.svelte";
   import TypePillBar from "./lib/TypePillBar.svelte";
   import SummaryText from "./lib/SummaryText.svelte";
+  import ActiveFilters from "./lib/ActiveFilters.svelte";
   import {
     getHealth,
     recordUrl,
@@ -32,6 +33,7 @@
   let scrollSentinel: HTMLDivElement | undefined = $state();
   let scrollObserver: IntersectionObserver | undefined = $state();
   let typeOptions = $state<string[]>([]);
+  let sourceOptions = $state<{ id: string; name?: string | null }[]>([]);
 
   const hasMore = $derived(results !== null && results.items.length < results.total);
 
@@ -39,6 +41,20 @@
     const order = facets.types.map((bucket) => bucket.value);
     const known = new Set([...typeOptions, ...order]);
     typeOptions = [...order, ...[...known].filter((value) => !order.includes(value))];
+  }
+
+  function updateSourceOptions(facets: SearchFacets) {
+    const byId = new Map(sourceOptions.map((option) => [option.id, option]));
+    for (const bucket of facets.sources) {
+      const existing = byId.get(bucket.id);
+      byId.set(bucket.id, {
+        id: bucket.id,
+        name: bucket.name ?? existing?.name,
+      });
+    }
+    const order = facets.sources.map((bucket) => bucket.id);
+    const known = [...byId.keys()].filter((id) => !order.includes(id));
+    sourceOptions = [...order, ...known].map((id) => byId.get(id)!);
   }
 
   function currentParams(): SearchParams {
@@ -77,6 +93,7 @@
         results = response;
       }
       updateTypeOptions(response.facets);
+      updateSourceOptions(response.facets);
     } catch (e) {
       if (append) {
         page = Math.max(1, page - 1);
@@ -176,11 +193,19 @@
     await runSearch();
   }
 
+  async function handleClearFilters() {
+    selectedTypes = [];
+    selectedSources = [];
+    page = 1;
+    await runSearch();
+  }
+
   async function handleHomeClick(event: MouseEvent) {
     event.preventDefault();
     query = "";
     selectedTypes = [];
     selectedSources = [];
+    sourceOptions = [];
     page = 1;
     await runSearch();
   }
@@ -223,10 +248,20 @@
     onTypeToggle={handleTypeToggle}
   />
 
+  <ActiveFilters
+    {selectedTypes}
+    {selectedSources}
+    {sourceOptions}
+    onTypeToggle={handleTypeToggle}
+    onSourceToggle={handleSourceToggle}
+    onClearAll={handleClearFilters}
+  />
+
   <div class="layout">
     <FacetPanel
       facets={results?.facets ?? null}
       {typeOptions}
+      {sourceOptions}
       {selectedTypes}
       {selectedSources}
       onTypeToggle={handleTypeToggle}

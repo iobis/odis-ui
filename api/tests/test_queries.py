@@ -25,14 +25,35 @@ def test_text_search_requires_searchable_text() -> None:
     assert any("description" in str(f) or "keywords" in str(f) for f in filters)
 
 
-def test_sources_filter_uses_terms_query() -> None:
+def test_sources_filter_uses_post_filter() -> None:
     body = build_search_body(SearchQuery(q="marine", sources=["40", "3308"]))
-    source_filter = next(
-        item
-        for item in body["query"]["bool"]["filter"]
-        if "datasource_id.keyword" in item.get("terms", {})
+    assert body["post_filter"]["terms"]["datasource_id.keyword"] == ["40", "3308"]
+    query_filters = body["query"]["bool"]["filter"]
+    assert not any("datasource_id.keyword" in str(f) for f in query_filters)
+
+
+def test_disjunctive_source_facet_applies_type_not_source() -> None:
+    body = build_search_body(SearchQuery(types=["dataset"], sources=["40"]))
+    source_facet_filter = body["aggs"]["sources"]["filter"]["bool"]["filter"]
+    assert any("@type.keyword" in str(f) for f in source_facet_filter)
+    assert not any("datasource_id.keyword" in str(f) for f in source_facet_filter)
+
+
+def test_disjunctive_type_facet_applies_source_not_type() -> None:
+    body = build_search_body(SearchQuery(types=["dataset"], sources=["40"]))
+    type_facet_filter = body["aggs"]["types"]["filter"]["bool"]["filter"]
+    assert any("datasource_id.keyword" in str(f) for f in type_facet_filter)
+    assert not any(
+        item.get("terms", {}).get("@type.keyword") == ["Dataset", "schema:Dataset"]
+        for item in type_facet_filter
+        if isinstance(item, dict)
     )
-    assert source_filter["terms"]["datasource_id.keyword"] == ["40", "3308"]
+
+
+def test_combined_filters_use_post_filter_bool() -> None:
+    body = build_search_body(SearchQuery(types=["dataset"], sources=["40", "3308"]))
+    post_filter = body["post_filter"]["bool"]["filter"]
+    assert len(post_filter) == 2
 
 
 def test_default_type_filter() -> None:
@@ -93,7 +114,10 @@ def test_map_search_response_highlight_title() -> None:
                 }
             ],
         },
-        "aggregations": {"types": {"buckets": []}, "sources": {"buckets": []}},
+        "aggregations": {
+            "types": {"buckets": {"buckets": []}},
+            "sources": {"buckets": {"buckets": []}},
+        },
     }
     response = map_search_response(query, raw)
     assert response.items[0].highlight == {"title": "<em>Marine</em> dataset"}
@@ -119,7 +143,10 @@ def test_map_search_response_highlight_description() -> None:
                 }
             ],
         },
-        "aggregations": {"types": {"buckets": []}, "sources": {"buckets": []}},
+        "aggregations": {
+            "types": {"buckets": {"buckets": []}},
+            "sources": {"buckets": {"buckets": []}},
+        },
     }
     response = map_search_response(query, raw)
     assert response.items[0].highlight == {"description": "Analysis of <em>coral</em> growth"}

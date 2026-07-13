@@ -3,9 +3,15 @@
   import { formatNumber } from "./format";
   import { formatTypeLabel, sourceLabel } from "./labels";
 
+  interface SourceOption {
+    id: string;
+    name?: string | null;
+  }
+
   interface Props {
     facets: SearchFacets | null;
     typeOptions: string[];
+    sourceOptions: SourceOption[];
     selectedTypes: string[];
     selectedSources: string[];
     onTypeToggle: (value: string) => void;
@@ -15,6 +21,7 @@
   let {
     facets,
     typeOptions,
+    sourceOptions,
     selectedTypes,
     selectedSources,
     onTypeToggle,
@@ -24,15 +31,28 @@
   function typeCount(value: string): number {
     return facets?.types.find((bucket) => bucket.value === value)?.count ?? 0;
   }
+
+  function sourceCount(id: string): number {
+    return facets?.sources.find((bucket) => bucket.id === id)?.count ?? 0;
+  }
+
+  function sourceName(id: string): string | null | undefined {
+    return (
+      facets?.sources.find((bucket) => bucket.id === id)?.name ??
+      sourceOptions.find((option) => option.id === id)?.name
+    );
+  }
 </script>
 
 <aside class="facet-panel">
   <section class="facet-group">
     <h2>Type</h2>
+    <p class="facet-hint">Match any selected</p>
     {#if typeOptions.length}
       <ul>
         {#each typeOptions as value (value)}
-          <li>
+          {@const count = typeCount(value)}
+          <li class:inactive={count === 0 && !selectedTypes.includes(value)}>
             <label>
               <input
                 type="checkbox"
@@ -40,7 +60,7 @@
                 onchange={() => onTypeToggle(value)}
               />
               <span>{formatTypeLabel(value)}</span>
-              <span class="count">{formatNumber(typeCount(value))}</span>
+              <span class="count">{formatNumber(count)}</span>
             </label>
           </li>
         {/each}
@@ -52,18 +72,20 @@
 
   <section class="facet-group">
     <h2>Datasource</h2>
-    {#if facets?.sources.length}
+    <p class="facet-hint">Match any selected</p>
+    {#if sourceOptions.length}
       <ul>
-        {#each facets.sources as bucket (bucket.id)}
-          <li>
+        {#each sourceOptions as option (option.id)}
+          {@const count = sourceCount(option.id)}
+          <li class:inactive={count === 0 && !selectedSources.includes(option.id)}>
             <label>
               <input
                 type="checkbox"
-                checked={selectedSources.includes(bucket.id)}
-                onchange={() => onSourceToggle(bucket.id)}
+                checked={selectedSources.includes(option.id)}
+                onchange={() => onSourceToggle(option.id)}
               />
-              <span>{sourceLabel(bucket.id, bucket.name)}</span>
-              <span class="count">{formatNumber(bucket.count)}</span>
+              <span>{sourceLabel(option.id, sourceName(option.id) ?? option.name)}</span>
+              <span class="count">{formatNumber(count)}</span>
             </label>
           </li>
         {/each}
@@ -89,12 +111,18 @@
   }
 
   h2 {
-    margin: 0 0 0.75rem;
+    margin: 0 0 0.25rem;
     font-size: 0.85rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: #4b5d63;
+  }
+
+  .facet-hint {
+    margin: 0 0 0.75rem;
+    font-size: 0.75rem;
+    color: #8a9a9f;
   }
 
   ul {
@@ -107,6 +135,10 @@
 
   li + li {
     margin-top: 0.35rem;
+  }
+
+  li.inactive {
+    opacity: 0.45;
   }
 
   label {

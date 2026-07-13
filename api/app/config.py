@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     elasticsearch_user: str = ""
     elasticsearch_password: str = ""
     es_index: str = "odis_metadata"
+    es_catalogue_index: str = "catalogue"
 
 
 settings = Settings()

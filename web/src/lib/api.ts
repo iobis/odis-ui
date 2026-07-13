@@ -51,7 +51,7 @@ export interface SearchResponse {
 export interface SearchParams {
   q?: string;
   types?: string[];
-  source?: string;
+  source?: string[];
   sort?: "relevance" | "title";
   page?: number;
   size?: number;
@@ -87,7 +87,7 @@ export function search(params: SearchParams = {}): Promise<SearchResponse> {
   const query: Record<string, string | string[]> = {};
   if (params.q) query.q = params.q;
   if (params.types?.length) query.types = params.types;
-  if (params.source) query.source = params.source;
+  if (params.source?.length) query.source = params.source;
   if (params.sort) query.sort = params.sort;
   if (params.page) query.page = String(params.page);
   if (params.size) query.size = String(params.size);

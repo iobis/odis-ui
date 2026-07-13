@@ -1,6 +1,5 @@
-from app.domain.enums import PRIMARY_RECORD_TYPES
 from app.domain.search import SearchQuery
-from app.search.elasticsearch.mappings import TEXT_FIELDS
+from app.search.elasticsearch.mappings import TEXT_FIELDS, raw_types_for_filter
 from app.search.elasticsearch.queries import build_search_body, map_search_response
 from app.search.elasticsearch.urls import elasticsearch_document_url
 
@@ -26,12 +25,32 @@ def test_text_search_requires_searchable_text() -> None:
     assert any("description" in str(f) or "keywords" in str(f) for f in filters)
 
 
+def test_sources_filter_uses_terms_query() -> None:
+    body = build_search_body(SearchQuery(q="marine", sources=["40", "3308"]))
+    source_filter = next(
+        item
+        for item in body["query"]["bool"]["filter"]
+        if "datasource_id.keyword" in item.get("terms", {})
+    )
+    assert source_filter["terms"]["datasource_id.keyword"] == ["40", "3308"]
+
+
 def test_default_type_filter() -> None:
     body = build_search_body(SearchQuery(q="marine"))
     type_filter = next(
-        item for item in body["query"]["bool"]["filter"] if "record_type" in item.get("terms", {})
+        item for item in body["query"]["bool"]["filter"] if "@type.keyword" in item.get("terms", {})
     )
-    assert type_filter["terms"]["record_type"] == list(PRIMARY_RECORD_TYPES)
+    assert "Dataset" in type_filter["terms"]["@type.keyword"]
+    assert "schema:Dataset" in type_filter["terms"]["@type.keyword"]
+
+
+def test_boattrip_type_filter_uses_pascal_case_keyword() -> None:
+    assert raw_types_for_filter(["boattrip"]) == ["BoatTrip"]
+    body = build_search_body(SearchQuery(types=["boattrip"]))
+    type_filter = next(
+        item for item in body["query"]["bool"]["filter"] if "@type.keyword" in item.get("terms", {})
+    )
+    assert type_filter["terms"]["@type.keyword"] == ["BoatTrip"]
 
 
 def test_map_search_response_highlight_title() -> None:

@@ -14,9 +14,30 @@ body {
 }
 
 main {
-  max-width: 960px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 2rem 1.5rem;
+}
+
+.page-header {
+  margin-bottom: 1.5rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.results {
+  min-width: 0;
+}
+
+@media (max-width: 800px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 h1 {
@@ -98,6 +119,12 @@ h1 {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #0f6e56;
+}
+
+.result-card .source {
+  margin: 0.25rem 0 0;
+  color: #4b5d63;
+  font-size: 0.85rem;
 }
 
 .result-card p {

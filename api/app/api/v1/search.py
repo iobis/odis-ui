@@ -24,7 +24,10 @@ async def search(
         list[str] | None,
         Query(description="Record type filters (repeat param for multiple values)"),
     ] = None,
-    source: Annotated[str | None, Query(description="Filter by datasource_id")] = None,
+    source: Annotated[
+        list[str] | None,
+        Query(description="Filter by datasource_id (repeat param for multiple values)"),
+    ] = None,
     sort: Annotated[SortOrder, Query(description="Sort order")] = SortOrder.RELEVANCE,
     page: Annotated[int, Query(ge=1, description="Page number")] = 1,
     size: Annotated[int, Query(ge=1, le=50, description="Results per page")] = 20,
@@ -33,7 +36,7 @@ async def search(
     query = SearchQuery(
         q=q,
         types=types or [],
-        source=source,
+        sources=source or [],
         sort=sort.value,
         page=page,
         size=size,

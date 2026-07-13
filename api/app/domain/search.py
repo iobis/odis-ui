@@ -60,7 +60,7 @@ class SearchQuery(BaseModel):
         description="Search query matched against title, description, and keywords",
     )
     types: list[str] = Field(default_factory=list, description="Record type filters")
-    source: str | None = Field(default=None, description="Filter by datasource_id")
+    sources: list[str] = Field(default_factory=list, description="Filter by datasource_id")
     sort: str = Field(default="relevance", description="Sort order: relevance or title")
     page: int = Field(default=1, ge=1)
     size: int = Field(default=20, ge=1, le=50)

@@ -13,34 +13,11 @@ from app.domain.search import (
     SourceFacetBucket,
     SourceRef,
 )
-from app.search.elasticsearch.mappings import DATASOURCE_FIELD, TEXT_FIELDS
-
-RECORD_TYPE_RUNTIME = {
-    "record_type": {
-        "type": "keyword",
-        "script": {
-            "source": """
-                String typeVal = null;
-                if (doc.containsKey('@type.keyword') && doc['@type.keyword'].size() > 0) {
-                    typeVal = doc['@type.keyword'].value;
-                } else if (doc.containsKey('@type') && doc['@type'].size() > 0) {
-                    typeVal = doc['@type'].value;
-                }
-                if (typeVal == null || typeVal.length() == 0) {
-                    return;
-                }
-                int idx = typeVal.lastIndexOf('/');
-                if (idx >= 0) {
-                    typeVal = typeVal.substring(idx + 1);
-                }
-                if (typeVal.startsWith('schema:')) {
-                    typeVal = typeVal.substring(7);
-                }
-                emit(typeVal.toLowerCase());
-            """,
-        },
-    }
-}
+from app.search.elasticsearch.mappings import (
+    DATASOURCE_FIELD,
+    TEXT_FIELDS,
+    raw_types_for_filter,
+)
 
 HAS_SEARCHABLE_TEXT = {
     "bool": {
@@ -75,10 +52,10 @@ def _text_clause(query: SearchQuery) -> dict[str, Any]:
 
 def build_search_body(query: SearchQuery) -> dict[str, Any]:
     filters: list[dict[str, Any]] = [
-        {"terms": {"record_type": _resolved_types(query)}},
+        {"terms": {"@type.keyword": raw_types_for_filter(_resolved_types(query))}},
     ]
-    if query.source:
-        filters.append({"term": {f"{DATASOURCE_FIELD}.keyword": query.source}})
+    if query.sources:
+        filters.append({"terms": {f"{DATASOURCE_FIELD}.keyword": query.sources}})
     if query.q:
         filters.append(HAS_SEARCHABLE_TEXT)
 
@@ -87,7 +64,6 @@ def build_search_body(query: SearchQuery) -> dict[str, Any]:
         must.append(_text_clause(query))
 
     body: dict[str, Any] = {
-        "runtime_mappings": RECORD_TYPE_RUNTIME,
         "query": {
             "bool": {
                 "filter": filters,
@@ -98,7 +74,7 @@ def build_search_body(query: SearchQuery) -> dict[str, Any]:
         "size": query.size,
         "_source": {"excludes": ["data"]},
         "aggs": {
-            "types": {"terms": {"field": "record_type", "size": 30}},
+            "types": {"terms": {"field": "@type.keyword", "size": 100}},
             "sources": {"terms": {"field": f"{DATASOURCE_FIELD}.keyword", "size": 30}},
         },
     }
@@ -120,8 +96,6 @@ def build_search_body(query: SearchQuery) -> dict[str, Any]:
             {"name.keyword": {"order": "asc", "missing": "_last", "unmapped_type": "keyword"}},
             {"schema:name.keyword": {"order": "asc", "missing": "_last", "unmapped_type": "keyword"}},
         ]
-    elif not query.q:
-        body["sort"] = [{"indexed_at": {"order": "desc", "unmapped_type": "keyword"}}]
 
     return body
 
@@ -169,18 +143,31 @@ def _normalize_record_type(raw_type: Any) -> str | None:
     return value.lower()
 
 
+def _merge_type_facet_buckets(buckets: list[dict[str, Any]]) -> list[FacetBucket]:
+    counts: dict[str, int] = {}
+    for bucket in buckets:
+        normalized = _normalize_record_type(bucket.get("key"))
+        if not normalized:
+            continue
+        counts[normalized] = counts.get(normalized, 0) + bucket["doc_count"]
+    return sorted(
+        [FacetBucket(value=value, count=count) for value, count in counts.items()],
+        key=lambda bucket: bucket.count,
+        reverse=True,
+    )
+
+
 def map_document_to_item(
     record_id: str,
     source: dict[str, Any],
     *,
     highlight: dict[str, list[str]] | None = None,
-    record_type: str | None = None,
     elasticsearch_document_url: str | None = None,
 ) -> SearchItem:
     title = _field_value(source, "name", "schema:name") or "(untitled)"
     summary = _field_value(source, "description", "schema:description")
     datasource_id = _field_value(source, DATASOURCE_FIELD)
-    normalized_type = record_type or _normalize_record_type(source.get("@type"))
+    normalized_type = _normalize_record_type(source.get("@type"))
     source_ref = SourceRef(id=datasource_id) if datasource_id else None
     return SearchItem(
         id=record_id,
@@ -207,26 +194,18 @@ def map_search_response(
     items: list[SearchItem] = []
     for hit in hits.get("hits", []):
         source = hit.get("_source", {})
-        fields = hit.get("fields") or {}
-        record_type_values = fields.get("record_type") or []
-        record_type = record_type_values[0] if record_type_values else None
         record_id = hit.get("_id", "")
         items.append(
             map_document_to_item(
                 record_id,
                 source,
                 highlight=hit.get("highlight"),
-                record_type=record_type,
                 elasticsearch_document_url=document_url_for(record_id) if document_url_for else None,
             )
         )
 
     aggs = raw.get("aggregations", {})
-    type_facets = [
-        FacetBucket(value=bucket["key"], count=bucket["doc_count"])
-        for bucket in aggs.get("types", {}).get("buckets", [])
-        if bucket.get("key")
-    ]
+    type_facets = _merge_type_facet_buckets(aggs.get("types", {}).get("buckets", []))
     source_facets = [
         SourceFacetBucket(id=str(bucket["key"]), count=bucket["doc_count"])
         for bucket in aggs.get("sources", {}).get("buckets", [])

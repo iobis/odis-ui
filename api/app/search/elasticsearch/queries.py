@@ -41,6 +41,17 @@ def _resolved_types(query: SearchQuery) -> list[str]:
     return list(PRIMARY_RECORD_TYPES)
 
 
+def _scope_type_filter() -> dict[str, Any]:
+    """Default record-type scope for search and facet counts."""
+    return {"terms": {"@type.keyword": raw_types_for_filter(list(PRIMARY_RECORD_TYPES))}}
+
+
+def _selected_type_post_filter(query: SearchQuery) -> dict[str, Any] | None:
+    if not query.types:
+        return None
+    return {"terms": {"@type.keyword": raw_types_for_filter(_resolved_types(query))}}
+
+
 def _text_clause(query: SearchQuery) -> dict[str, Any]:
     return {
         "multi_match": {
@@ -53,7 +64,7 @@ def _text_clause(query: SearchQuery) -> dict[str, Any]:
 
 def build_search_body(query: SearchQuery) -> dict[str, Any]:
     filters: list[dict[str, Any]] = [
-        {"terms": {"@type.keyword": raw_types_for_filter(_resolved_types(query))}},
+        _scope_type_filter(),
     ]
     if query.sources:
         filters.append({"terms": {f"{DATASOURCE_FIELD}.keyword": query.sources}})
@@ -79,6 +90,10 @@ def build_search_body(query: SearchQuery) -> dict[str, Any]:
             "sources": {"terms": {"field": f"{DATASOURCE_FIELD}.keyword", "size": 30}},
         },
     }
+
+    post_filter = _selected_type_post_filter(query)
+    if post_filter is not None:
+        body["post_filter"] = post_filter
 
     if query.q:
         body["highlight"] = {

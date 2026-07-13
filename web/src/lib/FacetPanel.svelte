@@ -5,6 +5,7 @@
 
   interface Props {
     facets: SearchFacets | null;
+    typeOptions: string[];
     selectedTypes: string[];
     selectedSources: string[];
     onTypeToggle: (value: string) => void;
@@ -13,28 +14,33 @@
 
   let {
     facets,
+    typeOptions,
     selectedTypes,
     selectedSources,
     onTypeToggle,
     onSourceToggle,
   }: Props = $props();
+
+  function typeCount(value: string): number {
+    return facets?.types.find((bucket) => bucket.value === value)?.count ?? 0;
+  }
 </script>
 
 <aside class="facet-panel">
   <section class="facet-group">
     <h2>Type</h2>
-    {#if facets?.types.length}
+    {#if typeOptions.length}
       <ul>
-        {#each facets.types as bucket (bucket.value)}
+        {#each typeOptions as value (value)}
           <li>
             <label>
               <input
                 type="checkbox"
-                checked={selectedTypes.includes(bucket.value)}
-                onchange={() => onTypeToggle(bucket.value)}
+                checked={selectedTypes.includes(value)}
+                onchange={() => onTypeToggle(value)}
               />
-              <span>{formatTypeLabel(bucket.value)}</span>
-              <span class="count">{formatNumber(bucket.count)}</span>
+              <span>{formatTypeLabel(value)}</span>
+              <span class="count">{formatNumber(typeCount(value))}</span>
             </label>
           </li>
         {/each}

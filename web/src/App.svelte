@@ -2,16 +2,19 @@
   import { onMount } from "svelte";
   import FacetPanel from "./lib/FacetPanel.svelte";
   import HealthIndicator from "./lib/HealthIndicator.svelte";
+  import TypeBadge from "./lib/TypeBadge.svelte";
+  import TypePillBar from "./lib/TypePillBar.svelte";
   import {
     getHealth,
     recordUrl,
     search,
     type HealthStatus,
+    type SearchFacets,
     type SearchParams,
     type SearchResponse,
   } from "./lib/api";
-  import { buildSearchUrl, parseSearchParams, toggleValue } from "./lib/url";
   import { formatNumber } from "./lib/format";
+  import { buildSearchUrl, parseSearchParams, toggleValue } from "./lib/url";
   import "./app.css";
 
   let health: HealthStatus | null = $state(null);
@@ -26,8 +29,15 @@
   let loadingMore = $state(false);
   let scrollSentinel: HTMLDivElement | undefined = $state();
   let scrollObserver: IntersectionObserver | undefined = $state();
+  let typeOptions = $state<string[]>([]);
 
   const hasMore = $derived(results !== null && results.items.length < results.total);
+
+  function updateTypeOptions(facets: SearchFacets) {
+    const order = facets.types.map((bucket) => bucket.value);
+    const known = new Set([...typeOptions, ...order]);
+    typeOptions = [...order, ...[...known].filter((value) => !order.includes(value))];
+  }
 
   function currentParams(): SearchParams {
     return {
@@ -63,6 +73,7 @@
       } else {
         results = response;
       }
+      updateTypeOptions(response.facets);
     } catch (e) {
       if (append) {
         page = Math.max(1, page - 1);
@@ -145,6 +156,12 @@
     await runSearch();
   }
 
+  async function handleAllTypes() {
+    selectedTypes = [];
+    page = 1;
+    await runSearch();
+  }
+
   async function handleSourceToggle(id: string) {
     selectedSources = toggleValue(selectedSources, id);
     page = 1;
@@ -166,9 +183,17 @@
     <button type="submit" disabled={loading}>{loading ? "Searching…" : "Search"}</button>
   </form>
 
+  <TypePillBar
+    {typeOptions}
+    {selectedTypes}
+    onAllTypes={handleAllTypes}
+    onTypeToggle={handleTypeToggle}
+  />
+
   <div class="layout">
     <FacetPanel
       facets={results?.facets ?? null}
+      {typeOptions}
       {selectedTypes}
       {selectedSources}
       onTypeToggle={handleTypeToggle}
@@ -184,7 +209,7 @@
         <p class="results-meta">{formatNumber(results.total)} result{results.total === 1 ? "" : "s"}</p>
         {#each results.items as item (item.id)}
           <article class="result-card">
-            <span class="type">{item.type}</span>
+            <TypeBadge type={item.type} />
             <h2>{item.title}</h2>
             {#if item.source?.name}
               <p class="source">{item.source.name}</p>

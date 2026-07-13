@@ -47,10 +47,16 @@ def test_default_type_filter() -> None:
 def test_boattrip_type_filter_uses_pascal_case_keyword() -> None:
     assert raw_types_for_filter(["boattrip"]) == ["BoatTrip"]
     body = build_search_body(SearchQuery(types=["boattrip"]))
-    type_filter = next(
+    assert body["post_filter"]["terms"]["@type.keyword"] == ["BoatTrip"]
+    scope_filter = next(
         item for item in body["query"]["bool"]["filter"] if "@type.keyword" in item.get("terms", {})
     )
-    assert type_filter["terms"]["@type.keyword"] == ["BoatTrip"]
+    assert "Dataset" in scope_filter["terms"]["@type.keyword"]
+
+
+def test_selected_type_filter_uses_post_filter() -> None:
+    body = build_search_body(SearchQuery(types=["dataset"]))
+    assert body["post_filter"]["terms"]["@type.keyword"] == ["Dataset", "schema:Dataset"]
 
 
 def test_map_search_response_decodes_html_entities_in_title() -> None:

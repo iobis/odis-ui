@@ -1,8 +1,29 @@
 :root {
-  font-family: system-ui, -apple-system, sans-serif;
-  line-height: 1.5;
-  color: #12232b;
-  background: #f3f6f4;
+  --paper: #f3f6f4;
+  --paper-raised: #ffffff;
+  --ink: #12232b;
+  --ink-soft: #4b5d63;
+  --ink-faint: #8a9b98;
+  --line: #d7e0dc;
+  --line-strong: #b7c6c1;
+  --depth: #0f6e56;
+  --depth-tint: #e1f5ee;
+
+  --dataset: #0f6e56;
+  --dataset-tint: #e1f5ee;
+  --literature: #a3401f;
+  --literature-tint: #faeee7;
+  --org: #1f5c8b;
+  --org-tint: #e7f1fa;
+  --training: #8b5e0b;
+  --training-tint: #fbf1de;
+  --project: #5a4a96;
+  --project-tint: #efedfa;
+
+  font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--paper);
 }
 
 * {
@@ -53,8 +74,10 @@ main {
 }
 
 h1 {
+  font-family: "Fraunces", serif;
   font-size: 1.75rem;
-  font-weight: 600;
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
 .subtitle {
@@ -108,28 +131,69 @@ h1 {
 }
 
 .result-card {
-  background: #fff;
-  border: 1px solid #d7e0dc;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
   border-radius: 4px;
-  padding: 1rem;
+  padding: 1.1rem;
   margin-bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.type-badge {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  display: inline-block;
+  width: fit-content;
+  text-transform: lowercase;
+  letter-spacing: 0.01em;
+}
+
+.type-badge.dataset {
+  color: var(--dataset);
+  background: var(--dataset-tint);
+}
+
+.type-badge.literature {
+  color: var(--literature);
+  background: var(--literature-tint);
+}
+
+.type-badge.org {
+  color: var(--org);
+  background: var(--org-tint);
+}
+
+.type-badge.training {
+  color: var(--training);
+  background: var(--training-tint);
+}
+
+.type-badge.project {
+  color: var(--project);
+  background: var(--project-tint);
+}
+
+.type-badge.default {
+  color: var(--ink-soft);
+  background: var(--paper);
+  border: 1px solid var(--line);
 }
 
 .result-card h2 {
-  font-size: 1.1rem;
-  margin: 0 0 0.25rem;
-}
-
-.result-card .type {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #0f6e56;
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 0.97rem;
+  font-weight: 500;
+  line-height: 1.4;
+  margin: 0;
 }
 
 .result-card .source {
-  margin: 0.25rem 0 0;
-  color: #4b5d63;
+  margin: 0;
+  color: var(--ink-soft);
   font-size: 0.85rem;
 }
 

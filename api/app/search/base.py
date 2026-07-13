@@ -1,10 +1,12 @@
 from typing import Protocol
 
-from app.domain.search import HealthStatus, SearchQuery, SearchResponse
+from app.domain.search import HealthStatus, RecordResponse, SearchQuery, SearchResponse
 
 
 class SearchBackend(Protocol):
     async def search(self, query: SearchQuery) -> SearchResponse: ...
+
+    async def get_record(self, record_id: str, *, include_raw: bool = False) -> RecordResponse: ...
 
     async def health(self) -> HealthStatus: ...
 

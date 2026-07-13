@@ -1,6 +1,7 @@
 from app.domain.search import (
     FacetBucket,
     HealthStatus,
+    RecordResponse,
     SearchFacets,
     SearchItem,
     SearchQuery,
@@ -42,6 +43,21 @@ class FakeSearchBackend:
     async def search(self, query: SearchQuery) -> SearchResponse:
         self.last_query = query
         return self.search_response.model_copy(update={"page": query.page, "size": query.size})
+
+    async def get_record(self, record_id: str, *, include_raw: bool = False) -> RecordResponse:
+        item = self.search_response.items[0]
+        if record_id != item.id:
+            from app.domain.errors import RecordNotFoundError
+
+            raise RecordNotFoundError(record_id)
+        item = self.search_response.items[0].model_copy(
+            update={
+                "elasticsearch_document_url": (
+                    f"http://elasticsearch.example/odis_metadata/_doc/{record_id}"
+                )
+            }
+        )
+        return RecordResponse(**item.model_dump(), raw={"data": {}} if include_raw else None)
 
     async def health(self) -> HealthStatus:
         return self.health_status

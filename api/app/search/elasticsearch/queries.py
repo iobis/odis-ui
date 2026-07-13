@@ -1,5 +1,6 @@
 """Build Elasticsearch query bodies and map responses to domain models."""
 
+from collections.abc import Callable
 from typing import Any
 
 from app.domain.enums import PRIMARY_RECORD_TYPES, SortOrder
@@ -146,7 +147,48 @@ def _map_highlight(highlight: dict[str, list[str]] | None) -> dict[str, str] | N
     return mapped or None
 
 
-def map_search_response(query: SearchQuery, raw: dict[str, Any]) -> SearchResponse:
+def _normalize_record_type(raw_type: Any) -> str | None:
+    if not isinstance(raw_type, str) or not raw_type.strip():
+        return None
+    value = raw_type.strip()
+    if "/" in value:
+        value = value.rsplit("/", 1)[-1]
+    if value.startswith("schema:"):
+        value = value[7:]
+    return value.lower()
+
+
+def map_document_to_item(
+    record_id: str,
+    source: dict[str, Any],
+    *,
+    highlight: dict[str, list[str]] | None = None,
+    record_type: str | None = None,
+    elasticsearch_document_url: str | None = None,
+) -> SearchItem:
+    title = _field_value(source, "name", "schema:name") or "(untitled)"
+    summary = _field_value(source, "description", "schema:description")
+    datasource_id = _field_value(source, DATASOURCE_FIELD)
+    normalized_type = record_type or _normalize_record_type(source.get("@type"))
+    source_ref = SourceRef(id=datasource_id) if datasource_id else None
+    return SearchItem(
+        id=record_id,
+        title=title,
+        summary=summary,
+        type=_display_type(normalized_type, source.get("@type")),
+        url=_field_value(source, "url"),
+        source=source_ref,
+        highlight=_map_highlight(highlight),
+        elasticsearch_document_url=elasticsearch_document_url,
+    )
+
+
+def map_search_response(
+    query: SearchQuery,
+    raw: dict[str, Any],
+    *,
+    document_url_for: Callable[[str], str] | None = None,
+) -> SearchResponse:
     hits = raw.get("hits", {})
     total_value = hits.get("total", {})
     total = total_value.get("value", 0) if isinstance(total_value, dict) else int(total_value or 0)
@@ -154,23 +196,17 @@ def map_search_response(query: SearchQuery, raw: dict[str, Any]) -> SearchRespon
     items: list[SearchItem] = []
     for hit in hits.get("hits", []):
         source = hit.get("_source", {})
-        title = _field_value(source, "name", "schema:name") or "(untitled)"
-        summary = _field_value(source, "description", "schema:description")
-        datasource_id = _field_value(source, DATASOURCE_FIELD)
         fields = hit.get("fields") or {}
         record_type_values = fields.get("record_type") or []
         record_type = record_type_values[0] if record_type_values else None
-
-        source_ref = SourceRef(id=datasource_id) if datasource_id else None
+        record_id = hit.get("_id", "")
         items.append(
-            SearchItem(
-                id=hit.get("_id", ""),
-                title=title,
-                summary=summary,
-                type=_display_type(record_type, source.get("@type")),
-                url=_field_value(source, "url"),
-                source=source_ref,
-                highlight=_map_highlight(hit.get("highlight")),
+            map_document_to_item(
+                record_id,
+                source,
+                highlight=hit.get("highlight"),
+                record_type=record_type,
+                elasticsearch_document_url=document_url_for(record_id) if document_url_for else None,
             )
         )
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getHealth, search, type HealthStatus, type SearchResponse } from "./lib/api";
+  import { getHealth, recordUrl, search, type HealthStatus, type SearchResponse } from "./lib/api";
   import "./app.css";
 
   let health: HealthStatus | null = $state(null);
@@ -73,6 +73,21 @@
         {#if item.summary}
           <p>{item.summary}</p>
         {/if}
+        <div class="record-links">
+          <a class="record-link" href={recordUrl(item.id)} target="_blank" rel="noopener noreferrer">
+            API record
+          </a>
+          {#if item.elasticsearch_document_url}
+            <a
+              class="record-link"
+              href={item.elasticsearch_document_url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Elasticsearch document
+            </a>
+          {/if}
+        </div>
       </article>
     {/each}
   {/if}

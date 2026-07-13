@@ -21,6 +21,7 @@ export interface SearchItem {
   url?: string | null;
   source?: SourceRef | null;
   highlight?: Record<string, string> | null;
+  elasticsearch_document_url?: string | null;
 }
 
 export interface FacetBucket {
@@ -72,6 +73,10 @@ async function fetchJson<T>(path: string, params?: Record<string, string | strin
     throw new Error(`API error: ${response.status}`);
   }
   return response.json() as Promise<T>;
+}
+
+export function recordUrl(id: string): string {
+  return `${API_BASE}/records/${encodeURIComponent(id)}`;
 }
 
 export function getHealth(): Promise<HealthStatus> {

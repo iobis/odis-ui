@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -30,6 +32,10 @@ class SearchItem(BaseModel):
     url: str | None = None
     source: SourceRef | None = None
     highlight: dict[str, str] | None = None
+    elasticsearch_document_url: str | None = Field(
+        default=None,
+        description="Direct link to the document in Elasticsearch",
+    )
 
 
 class FacetBucket(BaseModel):
@@ -93,4 +99,11 @@ class HealthStatus(BaseModel):
     detail: str | None = Field(
         default=None,
         description="Error detail when status is degraded",
+    )
+
+
+class RecordResponse(SearchItem):
+    raw: dict[str, Any] | None = Field(
+        default=None,
+        description="Full stored document when requested with ?raw=1",
     )

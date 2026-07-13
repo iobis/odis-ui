@@ -1,6 +1,16 @@
 from app.domain.enums import PRIMARY_RECORD_TYPES
 from app.domain.search import SearchQuery
 from app.search.elasticsearch.queries import build_search_body, map_search_response
+from app.search.elasticsearch.urls import elasticsearch_document_url
+
+
+def test_elasticsearch_document_url() -> None:
+    assert (
+        elasticsearch_document_url("http://localhost:9200/", "odis_metadata", "abc123")
+        == "http://localhost:9200/odis_metadata/_doc/abc123"
+    )
+from app.domain.search import SearchQuery
+from app.search.elasticsearch.queries import build_search_body, map_search_response
 
 
 def test_title_search_uses_name_fields() -> None:

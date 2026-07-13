@@ -98,6 +98,7 @@ Optional monitoring — exit non-zero if the cert expires within 14 days:
 | Symptom | Check |
 |---------|--------|
 | ACME challenge fails | DNS points to this host; port 80 reachable; `/.well-known/acme-challenge/` served from `/var/www/certbot` |
+| ACME challenge 404 with nginx running | The stock `default.conf` in the nginx image can shadow the ACME location — the prod Dockerfile removes it |
 | HTTPS shows old cert after renew | Deploy hook exists and is executable: `/etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh` |
 | nginx won't start | `docker compose -f docker-compose.prod.yml exec nginx nginx -t` |
 | Bootstrap used staging CA | Set `CERTBOT_STAGING=1` in `.env`, or re-issue with production: `sudo certbot certonly --webroot --force-renewal ...` |

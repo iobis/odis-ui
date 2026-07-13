@@ -3,6 +3,8 @@ server {
     listen 443 ssl;
     http2 on;
     server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
 
     ssl_certificate /etc/letsencrypt/live/__DOMAIN__/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/__DOMAIN__/privkey.pem;
@@ -27,7 +29,6 @@ server {
     }
 
     location / {
-        root /usr/share/nginx/html;
         try_files $uri $uri/ /index.html;
     }
 

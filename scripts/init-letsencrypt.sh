@@ -60,6 +60,18 @@ echo "==> Starting stack (HTTP bootstrap — app on port 80, no HTTPS redirect y
 cd "$REPO_DIR"
 docker compose -f "$COMPOSE_FILE" up -d --build
 
+echo "==> Verifying ACME webroot is reachable via nginx"
+TEST_FILE="preflight-$(date +%s)"
+mkdir -p /var/www/certbot/.well-known/acme-challenge
+echo ok > "/var/www/certbot/.well-known/acme-challenge/$TEST_FILE"
+if ! curl -sf "http://127.0.0.1/.well-known/acme-challenge/$TEST_FILE" | grep -q ok; then
+  echo "ACME webroot check failed — nginx is not serving /.well-known/acme-challenge/." >&2
+  echo "Ensure the image removes /etc/nginx/conf.d/default.conf (see web/Dockerfile)." >&2
+  rm -f "/var/www/certbot/.well-known/acme-challenge/$TEST_FILE"
+  exit 1
+fi
+rm -f "/var/www/certbot/.well-known/acme-challenge/$TEST_FILE"
+
 echo "==> Requesting certificate for $DOMAIN"
 certbot certonly --webroot -w /var/www/certbot \
   -d "$DOMAIN" \

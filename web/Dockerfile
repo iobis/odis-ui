@@ -20,4 +20,5 @@ RUN npm run build
 # Production nginx with static assets
 FROM nginx:alpine AS prod
 COPY --from=build /app/dist /usr/share/nginx/html
+RUN rm -f /etc/nginx/conf.d/default.conf
 EXPOSE 80

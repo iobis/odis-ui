@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import FacetPanel from "./lib/FacetPanel.svelte";
+  import HealthIndicator from "./lib/HealthIndicator.svelte";
   import {
     getHealth,
     recordUrl,
@@ -99,24 +100,11 @@
 
 <main>
   <header class="page-header">
-    <h1>ODIS Search</h1>
+    <div class="page-header-top">
+      <h1>ODIS Search</h1>
+      <HealthIndicator {health} {healthError} />
+    </div>
     <p class="subtitle">Faceted search over ODIS metadata records</p>
-
-    {#if healthError}
-      <div class="status degraded">API unreachable: {healthError}</div>
-    {:else if health}
-      <div class="status" class:ok={health.status === "ok"} class:degraded={health.status !== "ok"}>
-        API {health.status} · backend {health.backend} · index {health.index}
-        {#if health.index_reachable}
-          (reachable)
-        {:else}
-          (not reachable)
-        {/if}
-        {#if health.detail}
-          <br /><span class="error">{health.detail}</span>
-        {/if}
-      </div>
-    {/if}
   </header>
 
   <form class="search-form" onsubmit={handleSearch}>

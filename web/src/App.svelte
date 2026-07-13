@@ -22,6 +22,11 @@
   let results: SearchResponse | null = $state(null);
   let searchError: string | null = $state(null);
   let loading = $state(false);
+  let loadingMore = $state(false);
+  let scrollSentinel: HTMLDivElement | undefined = $state();
+  let scrollObserver: IntersectionObserver | undefined = $state();
+
+  const hasMore = $derived(results !== null && results.items.length < results.total);
 
   function currentParams(): SearchParams {
     return {
@@ -32,23 +37,48 @@
     };
   }
 
-  async function runSearch(pushUrl = true) {
-    loading = true;
-    searchError = null;
+  async function runSearch(pushUrl = true, append = false) {
+    if (append) {
+      if (loading || loadingMore || !hasMore) return;
+      loadingMore = true;
+    } else {
+      loading = true;
+      searchError = null;
+    }
+
     const params = currentParams();
 
-    if (pushUrl) {
+    if (pushUrl && !append) {
       history.replaceState(null, "", buildSearchUrl(params));
     }
 
     try {
-      results = await search(params);
+      const response = await search(params);
+      if (append && results) {
+        results = {
+          ...response,
+          items: [...results.items, ...response.items],
+        };
+      } else {
+        results = response;
+      }
     } catch (e) {
-      searchError = e instanceof Error ? e.message : "Search failed";
-      results = null;
+      if (append) {
+        page = Math.max(1, page - 1);
+      } else {
+        searchError = e instanceof Error ? e.message : "Search failed";
+        results = null;
+      }
     } finally {
       loading = false;
+      loadingMore = false;
     }
+  }
+
+  async function loadMore() {
+    if (!hasMore || loading || loadingMore) return;
+    page += 1;
+    await runSearch(false, true);
   }
 
   function applyFromUrl(url: URL) {
@@ -61,7 +91,17 @@
 
   onMount(() => {
     applyFromUrl(new URL(window.location.href));
+    page = 1;
     void runSearch(false);
+
+    scrollObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          void loadMore();
+        }
+      },
+      { rootMargin: "240px" },
+    );
 
     void getHealth()
       .then((status) => {
@@ -73,10 +113,23 @@
 
     const onPopState = () => {
       applyFromUrl(new URL(window.location.href));
+      page = 1;
       void runSearch(false);
     };
     window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      scrollObserver?.disconnect();
+      scrollObserver = undefined;
+    };
+  });
+
+  $effect(() => {
+    const node = scrollSentinel;
+    const observer = scrollObserver;
+    if (!node || !observer) return;
+    observer.observe(node);
+    return () => observer.unobserve(node);
   });
 
   async function handleSearch(event: Event) {
@@ -160,6 +213,16 @@
             </div>
           </article>
         {/each}
+
+        {#if hasMore}
+          <div class="scroll-sentinel" bind:this={scrollSentinel} aria-hidden="true"></div>
+        {/if}
+
+        {#if loadingMore}
+          <p class="results-meta loading-more">Loading more…</p>
+        {:else if !hasMore && results.items.length > 0}
+          <p class="results-meta end-of-results">End of results</p>
+        {/if}
       {:else if loading}
         <p class="results-meta">Searching…</p>
       {/if}

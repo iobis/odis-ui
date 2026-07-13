@@ -1,5 +1,6 @@
 """Build Elasticsearch query bodies and map responses to domain models."""
 
+import html
 from collections.abc import Callable
 from typing import Any
 
@@ -104,7 +105,7 @@ def _field_value(source: dict[str, Any], *keys: str) -> str | None:
     for key in keys:
         value = source.get(key)
         if isinstance(value, str) and value.strip():
-            return value.strip()
+            return html.unescape(value.strip())
     return None
 
 
@@ -128,7 +129,7 @@ def _map_highlight(highlight: dict[str, list[str]] | None) -> dict[str, str] | N
     for field, fragments in highlight.items():
         if fragments:
             key = "title" if field in {"name", "schema:name"} else field.replace("schema:", "")
-            mapped[key] = fragments[0]
+            mapped[key] = html.unescape(fragments[0])
     return mapped or None
 
 

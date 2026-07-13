@@ -1,6 +1,6 @@
 from app.domain.search import SearchQuery
 from app.search.elasticsearch.mappings import TEXT_FIELDS, raw_types_for_filter
-from app.search.elasticsearch.queries import build_search_body, map_search_response
+from app.search.elasticsearch.queries import build_search_body, map_document_to_item, map_search_response
 from app.search.elasticsearch.urls import elasticsearch_document_url
 
 
@@ -51,6 +51,14 @@ def test_boattrip_type_filter_uses_pascal_case_keyword() -> None:
         item for item in body["query"]["bool"]["filter"] if "@type.keyword" in item.get("terms", {})
     )
     assert type_filter["terms"]["@type.keyword"] == ["BoatTrip"]
+
+
+def test_map_search_response_decodes_html_entities_in_title() -> None:
+    item = map_document_to_item(
+        "abc",
+        {"@type": "Dataset", "name": "Total E&amp;P UK Ltd"},
+    )
+    assert item.title == "Total E&P UK Ltd"
 
 
 def test_map_search_response_highlight_title() -> None:

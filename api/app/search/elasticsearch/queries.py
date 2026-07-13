@@ -19,6 +19,7 @@ from app.search.elasticsearch.mappings import (
     TEXT_FIELDS,
     raw_types_for_filter,
 )
+from app.search.elasticsearch.spatial import extract_spatial_extent
 
 HAS_SEARCHABLE_TEXT = {
     "bool": {
@@ -84,7 +85,6 @@ def build_search_body(query: SearchQuery) -> dict[str, Any]:
         },
         "from": (query.page - 1) * query.size,
         "size": query.size,
-        "_source": {"excludes": ["data"]},
         "aggs": {
             "types": {"terms": {"field": "@type.keyword", "size": 100}},
             "sources": {"terms": {"field": f"{DATASOURCE_FIELD}.keyword", "size": 30}},
@@ -193,6 +193,7 @@ def map_document_to_item(
         url=_field_value(source, "url"),
         source=source_ref,
         highlight=_map_highlight(highlight),
+        spatial=extract_spatial_extent(source),
         elasticsearch_document_url=elasticsearch_document_url,
     )
 

@@ -45,8 +45,7 @@ class ElasticsearchBackend:
     async def get_record(self, record_id: str, *, include_raw: bool = False) -> RecordResponse:
         await self._ensure_catalogue()
         try:
-            source_excludes = None if include_raw else ["data"]
-            doc = await self._client.get(index=self.index, id=record_id, source_excludes=source_excludes)
+            doc = await self._client.get(index=self.index, id=record_id)
         except NotFoundError as exc:
             raise RecordNotFoundError(record_id) from exc
 

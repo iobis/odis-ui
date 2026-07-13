@@ -13,6 +13,23 @@ export interface SourceRef {
   name?: string | null;
 }
 
+export interface BoundingBox {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+}
+
+export interface GeoPoint {
+  lat: number;
+  lon: number;
+}
+
+export interface SpatialExtent {
+  boxes: BoundingBox[];
+  points: GeoPoint[];
+}
+
 export interface SearchItem {
   id: string;
   title: string;
@@ -21,6 +38,7 @@ export interface SearchItem {
   url?: string | null;
   source?: SourceRef | null;
   highlight?: Record<string, string> | null;
+  spatial?: SpatialExtent | null;
   elasticsearch_document_url?: string | null;
 }
 

@@ -8,6 +8,29 @@ class SourceRef(BaseModel):
     name: str | None = Field(default=None, description="Human-readable system name when enriched")
 
 
+class BoundingBox(BaseModel):
+    south: float = Field(description="Southern latitude in degrees (WGS84)")
+    west: float = Field(description="Western longitude in degrees (WGS84)")
+    north: float = Field(description="Northern latitude in degrees (WGS84)")
+    east: float = Field(description="Eastern longitude in degrees (WGS84)")
+
+
+class GeoPoint(BaseModel):
+    lat: float = Field(description="Latitude in degrees (WGS84)")
+    lon: float = Field(description="Longitude in degrees (WGS84)")
+
+
+class SpatialExtent(BaseModel):
+    boxes: list[BoundingBox] = Field(
+        default_factory=list,
+        description="Axis-aligned bounding boxes (schema.org GeoShape box order)",
+    )
+    points: list[GeoPoint] = Field(
+        default_factory=list,
+        description="Single-coordinate locations encoded as degenerate boxes",
+    )
+
+
 class SearchItem(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
@@ -32,6 +55,10 @@ class SearchItem(BaseModel):
     url: str | None = None
     source: SourceRef | None = None
     highlight: dict[str, str] | None = None
+    spatial: SpatialExtent | None = Field(
+        default=None,
+        description="Bounding boxes and single points extracted from JSON-LD spatial coverage",
+    )
     elasticsearch_document_url: str | None = Field(
         default=None,
         description="Direct link to the document in Elasticsearch",

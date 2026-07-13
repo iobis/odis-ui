@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import FacetPanel from "./lib/FacetPanel.svelte";
   import HealthIndicator from "./lib/HealthIndicator.svelte";
+  import SpatialExtentMap from "./lib/SpatialExtentMap.svelte";
   import TypeBadge from "./lib/TypeBadge.svelte";
   import TypePillBar from "./lib/TypePillBar.svelte";
   import {
@@ -221,6 +222,11 @@
             {/if}
             {#if item.summary}
               <p>{item.summary}</p>
+            {/if}
+            {#if item.spatial && (item.spatial.boxes.length || item.spatial.points.length)}
+              <div class="card-foot">
+                <SpatialExtentMap spatial={item.spatial} recordType={item.type} />
+              </div>
             {/if}
             <div class="record-links">
               <a class="record-link" href={recordUrl(item.id)} target="_blank" rel="noopener noreferrer">

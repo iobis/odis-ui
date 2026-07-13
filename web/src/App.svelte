@@ -56,7 +56,7 @@
   {/if}
 
   <form class="search-form" onsubmit={handleSearch}>
-    <input type="search" bind:value={query} placeholder="Search by title…" />
+    <input type="search" bind:value={query} placeholder="Search title, description, keywords…" />
     <button type="submit" disabled={loading}>{loading ? "Searching…" : "Search"}</button>
   </form>
 

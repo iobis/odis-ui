@@ -57,7 +57,7 @@ class SearchFacets(BaseModel):
 class SearchQuery(BaseModel):
     q: str | None = Field(
         default=None,
-        description="Search query matched against title fields (`name`, `schema:name`)",
+        description="Search query matched against title, description, and keywords",
     )
     types: list[str] = Field(default_factory=list, description="Record type filters")
     source: str | None = Field(default=None, description="Filter by datasource_id")

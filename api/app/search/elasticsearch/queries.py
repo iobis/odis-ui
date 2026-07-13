@@ -13,7 +13,7 @@ from app.domain.search import (
     SourceFacetBucket,
     SourceRef,
 )
-from app.search.elasticsearch.mappings import DATASOURCE_FIELD, TITLE_FIELDS
+from app.search.elasticsearch.mappings import DATASOURCE_FIELD, TEXT_FIELDS
 
 RECORD_TYPE_RUNTIME = {
     "record_type": {
@@ -42,9 +42,16 @@ RECORD_TYPE_RUNTIME = {
     }
 }
 
-HAS_TITLE = {
+HAS_SEARCHABLE_TEXT = {
     "bool": {
-        "should": [{"exists": {"field": "name"}}, {"exists": {"field": "schema:name"}}],
+        "should": [
+            {"exists": {"field": "name"}},
+            {"exists": {"field": "schema:name"}},
+            {"exists": {"field": "description"}},
+            {"exists": {"field": "schema:description"}},
+            {"exists": {"field": "keywords"}},
+            {"exists": {"field": "schema:keywords"}},
+        ],
         "minimum_should_match": 1,
     }
 }
@@ -56,11 +63,11 @@ def _resolved_types(query: SearchQuery) -> list[str]:
     return list(PRIMARY_RECORD_TYPES)
 
 
-def _title_clause(query: SearchQuery) -> dict[str, Any]:
+def _text_clause(query: SearchQuery) -> dict[str, Any]:
     return {
         "multi_match": {
             "query": query.q,
-            "fields": list(TITLE_FIELDS),
+            "fields": list(TEXT_FIELDS),
             "type": "best_fields",
         }
     }
@@ -73,11 +80,11 @@ def build_search_body(query: SearchQuery) -> dict[str, Any]:
     if query.source:
         filters.append({"term": {f"{DATASOURCE_FIELD}.keyword": query.source}})
     if query.q:
-        filters.append(HAS_TITLE)
+        filters.append(HAS_SEARCHABLE_TEXT)
 
     must: list[dict[str, Any]] = []
     if query.q:
-        must.append(_title_clause(query))
+        must.append(_text_clause(query))
 
     body: dict[str, Any] = {
         "runtime_mappings": RECORD_TYPE_RUNTIME,
@@ -101,6 +108,10 @@ def build_search_body(query: SearchQuery) -> dict[str, Any]:
             "fields": {
                 "name": {},
                 "schema:name": {},
+                "description": {},
+                "schema:description": {},
+                "keywords": {},
+                "schema:keywords": {},
             }
         }
 

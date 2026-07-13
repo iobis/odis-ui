@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="ODIS">
+  <!-- Ring segments with gaps around each dot -->
+  <path
+    d="M 20.28 5.86 A 11 11 0 0 1 26.14 11.72"
+    fill="none"
+    stroke="#1b2429"
+    stroke-width="3"
+    stroke-linecap="round"
+  />
+  <path
+    d="M 26.14 11.72 A 11 11 0 0 1 12.14 26.14"
+    fill="none"
+    stroke="#1b2429"
+    stroke-width="3"
+    stroke-linecap="round"
+  />
+  <path
+    d="M 5.86 20.28 A 11 11 0 0 1 11.72 5.86"
+    fill="none"
+    stroke="#1b2429"
+    stroke-width="3"
+    stroke-linecap="round"
+  />
+  <circle cx="16" cy="5" r="3.5" fill="#1b2429" />
+  <circle cx="27" cy="16" r="3.5" fill="#1b2429" />
+  <circle cx="8.2" cy="23.8" r="3.5" fill="#1b2429" />
+</svg>

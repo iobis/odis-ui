@@ -5,6 +5,7 @@
   import SpatialExtentMap from "./lib/SpatialExtentMap.svelte";
   import TypeBadge from "./lib/TypeBadge.svelte";
   import TypePillBar from "./lib/TypePillBar.svelte";
+  import SummaryText from "./lib/SummaryText.svelte";
   import {
     getHealth,
     recordUrl,
@@ -168,12 +169,21 @@
     page = 1;
     await runSearch();
   }
+
+  async function handleHomeClick(event: MouseEvent) {
+    event.preventDefault();
+    query = "";
+    selectedTypes = [];
+    selectedSources = [];
+    page = 1;
+    await runSearch();
+  }
 </script>
 
 <main>
   <header class="page-header">
     <div class="page-header-top">
-      <h1>ODIS Search</h1>
+      <h1><a href="/" class="site-title" onclick={handleHomeClick}>ODIS Search</a></h1>
       <HealthIndicator {health} {healthError} />
     </div>
     <p class="subtitle">Faceted search over ODIS metadata records</p>
@@ -221,7 +231,7 @@
               </p>
             {/if}
             {#if item.summary}
-              <p>{item.summary}</p>
+              <SummaryText summary={item.summary} />
             {/if}
             {#if item.spatial && (item.spatial.boxes.length || item.spatial.points.length)}
               <div class="card-foot">

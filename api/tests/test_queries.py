@@ -95,6 +95,14 @@ def test_map_search_response_decodes_html_entities_in_title() -> None:
     assert item.title == "Total E&P UK Ltd"
 
 
+def test_boattrip_with_event_types_displays_as_cruise() -> None:
+    item = map_document_to_item(
+        "cruise-1",
+        {"@type": ["Event", "BoatTrip"], "name": "Cruise: D231"},
+    )
+    assert item.type == "Cruise"
+
+
 def test_map_search_response_highlight_title() -> None:
     query = SearchQuery(q="marine")
     raw = {

@@ -129,7 +129,7 @@
     list-style: none;
     margin: 0;
     padding: 0;
-    max-height: 18rem;
+    max-height: 28rem;
     overflow-y: auto;
   }
 

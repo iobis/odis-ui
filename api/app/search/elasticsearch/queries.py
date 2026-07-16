@@ -139,7 +139,7 @@ def build_search_body(query: SearchQuery) -> dict[str, Any]:
             "sources": _filter_agg(
                 _source_facet_filters(query),
                 f"{DATASOURCE_FIELD}.keyword",
-                30,
+                200,
             ),
         },
     }
@@ -178,8 +178,18 @@ def _field_value(source: dict[str, Any], *keys: str) -> str | None:
 
 
 def _display_type(record_type: str | None, raw_type: Any) -> str:
+    if record_type == "boattrip":
+        return "Cruise"
+    if record_type == "creativework":
+        return "CreativeWork"
+    if record_type == "researchproject":
+        return "ResearchProject"
     if record_type:
-        return record_type.replace("creativework", "CreativeWork").title()
+        return record_type.title()
+    if isinstance(raw_type, list):
+        for item in raw_type:
+            if isinstance(item, str) and item.strip():
+                return _display_type(_normalize_record_type(item), item)
     if isinstance(raw_type, str) and raw_type.strip():
         value = raw_type.strip()
         if value.startswith("schema:"):
@@ -201,7 +211,33 @@ def _map_highlight(highlight: dict[str, list[str]] | None) -> dict[str, str] | N
     return mapped or None
 
 
+# Prefer specific types when a document has multiple @type values (e.g. Event + BoatTrip).
+_TYPE_PRIORITY = (
+    "boattrip",
+    "dataset",
+    "person",
+    "organization",
+    "creativework",
+    "researchproject",
+    "service",
+    "event",
+)
+
+
 def _normalize_record_type(raw_type: Any) -> str | None:
+    if isinstance(raw_type, list):
+        candidates = [
+            normalized
+            for item in raw_type
+            if (normalized := _normalize_record_type(item)) is not None
+        ]
+        if not candidates:
+            return None
+        for preferred in _TYPE_PRIORITY:
+            if preferred in candidates:
+                return preferred
+        return candidates[0]
+
     if not isinstance(raw_type, str) or not raw_type.strip():
         return None
     value = raw_type.strip()

@@ -175,6 +175,15 @@
     await runSearch();
   }
 
+  async function handleSearchBoxSearch(event: Event) {
+    // Native search clear (×) fires a search event with an empty value.
+    const target = event.currentTarget as HTMLInputElement;
+    if (target.value !== "") return;
+    query = "";
+    page = 1;
+    await runSearch();
+  }
+
   async function handleTypeToggle(value: string) {
     selectedTypes = toggleValue(selectedTypes, value);
     page = 1;
@@ -237,7 +246,12 @@
   </header>
 
   <form class="search-form" onsubmit={handleSearch}>
-    <input type="search" bind:value={query} placeholder="Search title, description, keywords…" />
+    <input
+      type="search"
+      bind:value={query}
+      placeholder="Search title, description, keywords…"
+      onsearch={handleSearchBoxSearch}
+    />
     <button type="submit" disabled={loading}>{loading ? "Searching…" : "Search"}</button>
   </form>
 
@@ -278,7 +292,15 @@
         {#each results.items as item (item.id)}
           <article class="result-card">
             <TypeBadge type={item.type} />
-            <h2>{item.title}</h2>
+            <h2>
+              {#if item.url}
+                <a href={item.url} class="result-title-link" target="_blank" rel="noopener noreferrer"
+                  >{item.title}</a
+                >
+              {:else}
+                {item.title}
+              {/if}
+            </h2>
             {#if item.source?.name}
               <p class="source">{item.source.name}</p>
             {/if}

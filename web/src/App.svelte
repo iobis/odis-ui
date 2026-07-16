@@ -8,7 +8,6 @@
   import SummaryText from "./lib/SummaryText.svelte";
   import ActiveFilters from "./lib/ActiveFilters.svelte";
   import {
-    getActiveBackend,
     getBackends,
     recordUrl,
     search,
@@ -23,7 +22,7 @@
   import "./app.css";
 
   let backends = $state<BackendInfo[]>([]);
-  let selectedBackend = $state<string | null>(getActiveBackend());
+  let selectedBackend = $state<string | null>(null);
   let backendsError: string | null = $state(null);
   let backendsLoading = $state(false);
   let query = $state("");
@@ -175,8 +174,10 @@
       { rootMargin: "240px" },
     );
 
-    // Search immediately on the default/first backend; health probes update the
-    // switcher in parallel and only trigger a re-search if we must fall back.
+    // Land on the configured default (first) backend and search immediately.
+    // Health probes update the switcher in parallel; re-search only on fallback.
+    selectedBackend = null;
+    setActiveBackend(null);
     void runSearch(false);
     void (async () => {
       const switched = await refreshBackends();

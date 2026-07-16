@@ -11,6 +11,17 @@ def test_elasticsearch_document_url() -> None:
     )
 
 
+def test_elasticsearch_document_url_encodes_special_ids() -> None:
+    assert (
+        elasticsearch_document_url(
+            "http://odis.org:9400/",
+            "gleaner-oe",
+            "https://oceanexpert.org/institute/12721",
+        )
+        == "http://odis.org:9400/gleaner-oe/_doc/https%3A%2F%2Foceanexpert.org%2Finstitute%2F12721"
+    )
+
+
 def test_text_search_uses_boosted_fields() -> None:
     body = build_search_body(SearchQuery(q="marine"))
     must = body["query"]["bool"]["must"][0]["multi_match"]

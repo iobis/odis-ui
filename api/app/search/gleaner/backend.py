@@ -9,7 +9,12 @@ from app.search.gleaner.queries import build_search_body, map_document_to_item, 
 
 
 def create_gleaner_client(settings: Settings) -> AsyncElasticsearch:
-    kwargs: dict = {"hosts": [settings.gleaner_elasticsearch_url]}
+    kwargs: dict = {
+        "hosts": [settings.gleaner_elasticsearch_url],
+        "request_timeout": 3,
+        "max_retries": 0,
+        "retry_on_timeout": False,
+    }
     if settings.gleaner_elasticsearch_user:
         kwargs["basic_auth"] = (
             settings.gleaner_elasticsearch_user,

@@ -8,6 +8,8 @@ from app.search.labels import backend_label
 
 router = APIRouter(tags=["backends"])
 
+_HEALTH_PROBE_TIMEOUT_SECONDS = 3.0
+
 
 @router.get(
     "/backends",
@@ -21,7 +23,18 @@ async def list_backends(request: Request) -> BackendsResponse:
 
     async def probe(backend_id: str, backend: SearchBackend) -> BackendInfo:
         try:
-            health = await backend.health()
+            health = await asyncio.wait_for(
+                backend.health(),
+                timeout=_HEALTH_PROBE_TIMEOUT_SECONDS,
+            )
+        except TimeoutError:
+            health = HealthStatus(
+                status="degraded",
+                backend=backend_id,
+                index="",
+                index_reachable=False,
+                detail=f"Health check timed out after {_HEALTH_PROBE_TIMEOUT_SECONDS:.0f}s",
+            )
         except Exception as exc:
             health = HealthStatus(
                 status="degraded",
@@ -35,7 +48,6 @@ async def list_backends(request: Request) -> BackendsResponse:
     results = await asyncio.gather(
         *(probe(backend_id, backend) for backend_id, backend in backends.items())
     )
-    # Stable order matching registration.
     order = list(backends.keys())
     by_id = {item.id: item for item in results}
     return BackendsResponse(

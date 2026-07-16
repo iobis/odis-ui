@@ -11,18 +11,23 @@
 
   let { backends, selectedId, loading = false, error = null, onSelect }: Props = $props();
 
+  function isAvailable(backend: BackendInfo): boolean {
+    return backend.health.index_reachable && backend.health.status === "ok";
+  }
+
   function tone(backend: BackendInfo): "ok" | "warning" | "error" | "pending" {
     if (loading && backends.length === 0) return "pending";
-    const health = backend.health;
-    if (!health.index_reachable || health.status !== "ok") {
-      return health.index_reachable ? "warning" : "error";
-    }
+    if (!backend.health.index_reachable) return "error";
+    if (backend.health.status !== "ok") return "warning";
     return "ok";
   }
 
   function title(backend: BackendInfo): string {
     const health = backend.health;
-    return [backend.label, health.status, health.index, health.detail].filter(Boolean).join(" · ");
+    const availability = isAvailable(backend) ? null : "unavailable";
+    return [backend.label, availability, health.status, health.index, health.detail]
+      .filter(Boolean)
+      .join(" · ");
   }
 </script>
 
@@ -34,13 +39,16 @@
 {:else if backends.length}
   <div class="backend-switcher" role="group" aria-label="Search backend">
     {#each backends as backend (backend.id)}
+      {@const available = isAvailable(backend)}
       <button
         type="button"
         class="backend-option {tone(backend)}"
         class:selected={selectedId === backend.id}
+        class:unavailable={!available}
         title={title(backend)}
         aria-pressed={selectedId === backend.id}
-        onclick={() => onSelect(backend.id)}
+        disabled={!available}
+        onclick={() => available && onSelect(backend.id)}
       >
         <span class="health-dot" aria-hidden="true"></span>
         <span class="backend-label">{backend.label}</span>
@@ -83,6 +91,15 @@
     border-color: #d7e0dc;
     background: #fff;
     color: #1b2429;
+  }
+
+  .backend-option.unavailable {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .backend-option:disabled {
+    cursor: not-allowed;
   }
 
   .backend-label {

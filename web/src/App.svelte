@@ -118,16 +118,31 @@
     await runSearch(false, true);
   }
 
-  async function refreshBackends() {
+  function backendIsAvailable(backend: BackendInfo): boolean {
+    return backend.health.index_reachable && backend.health.status === "ok";
+  }
+
+  async function refreshBackends(): Promise<boolean> {
     backendsLoading = true;
+    let switched = false;
     try {
       const response = await getBackends();
       backends = response.backends;
       backendsError = null;
-      const ids = new Set(response.backends.map((backend) => backend.id));
-      if (!selectedBackend || !ids.has(selectedBackend)) {
-        selectedBackend = response.default;
-        setActiveBackend(response.default);
+      const available = response.backends.filter(backendIsAvailable);
+      const availableIds = new Set(available.map((backend) => backend.id));
+
+      if (!selectedBackend || !availableIds.has(selectedBackend)) {
+        const fallback =
+          available.find((backend) => backend.id === response.default) ?? available[0] ?? null;
+        if (fallback && fallback.id !== selectedBackend) {
+          selectedBackend = fallback.id;
+          setActiveBackend(fallback.id);
+          switched = true;
+        } else if (fallback) {
+          selectedBackend = fallback.id;
+          setActiveBackend(fallback.id);
+        }
       }
     } catch (e) {
       backendsError = e instanceof Error ? e.message : "Failed to reach API";
@@ -135,6 +150,7 @@
     } finally {
       backendsLoading = false;
     }
+    return switched;
   }
 
   function applyFromUrl(url: URL) {
@@ -148,7 +164,6 @@
   onMount(() => {
     applyFromUrl(new URL(window.location.href));
     page = 1;
-    void runSearch(false);
 
     scrollObserver = new IntersectionObserver(
       (entries) => {
@@ -159,7 +174,10 @@
       { rootMargin: "240px" },
     );
 
-    void refreshBackends();
+    void (async () => {
+      await refreshBackends();
+      await runSearch(false);
+    })();
 
     const onPopState = () => {
       applyFromUrl(new URL(window.location.href));
@@ -183,7 +201,8 @@
   });
 
   async function handleBackendSelect(backendId: string) {
-    if (backendId === selectedBackend) return;
+    const target = backends.find((backend) => backend.id === backendId);
+    if (!target || !backendIsAvailable(target) || backendId === selectedBackend) return;
     selectedBackend = backendId;
     setActiveBackend(backendId);
     query = "";

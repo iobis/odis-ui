@@ -131,17 +131,18 @@
       backendsError = null;
       const available = response.backends.filter(backendIsAvailable);
       const availableIds = new Set(available.map((backend) => backend.id));
+      const previous = selectedBackend;
+      const preferredId = response.default || response.backends[0]?.id || null;
 
-      if (!selectedBackend || !availableIds.has(selectedBackend)) {
+      if (!previous || !availableIds.has(previous)) {
         const fallback =
-          available.find((backend) => backend.id === response.default) ?? available[0] ?? null;
-        if (fallback && fallback.id !== selectedBackend) {
+          available.find((backend) => backend.id === preferredId) ?? available[0] ?? null;
+        if (fallback) {
           selectedBackend = fallback.id;
           setActiveBackend(fallback.id);
-          switched = true;
-        } else if (fallback) {
-          selectedBackend = fallback.id;
-          setActiveBackend(fallback.id);
+          // Re-search only when the live backend differs from what search already used.
+          const assumed = previous ?? preferredId;
+          switched = Boolean(assumed) && fallback.id !== assumed;
         }
       }
     } catch (e) {
@@ -174,9 +175,14 @@
       { rootMargin: "240px" },
     );
 
+    // Search immediately on the default/first backend; health probes update the
+    // switcher in parallel and only trigger a re-search if we must fall back.
+    void runSearch(false);
     void (async () => {
-      await refreshBackends();
-      await runSearch(false);
+      const switched = await refreshBackends();
+      if (switched) {
+        await runSearch(false);
+      }
     })();
 
     const onPopState = () => {

@@ -15,5 +15,12 @@ class Settings(BaseSettings):
     es_index: str = "odis_metadata"
     es_catalogue_index: str = "catalogue"
 
+    # Used when SEARCH_BACKEND=gleaner (multi-index cluster, one index per source)
+    gleaner_elasticsearch_url: str = "http://odis.org:9400"
+    gleaner_elasticsearch_user: str = ""
+    gleaner_elasticsearch_password: str = ""
+    # Comma-separated; empty = default gleaner-obps,gleaner-medin,gleaner-obis,gleaner-oe
+    gleaner_indices: str = ""
+
 
 settings = Settings()

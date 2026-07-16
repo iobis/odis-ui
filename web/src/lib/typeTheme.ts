@@ -11,6 +11,7 @@ const TYPE_THEMES: Record<string, TypeTheme> = {
   person: { key: "org", badge: "person" },
   organization: { key: "org", badge: "organization" },
   event: { key: "training", badge: "event" },
+  course: { key: "training", badge: "course" },
   researchproject: { key: "project", badge: "project" },
   boattrip: { key: "training", badge: "cruise" },
   cruise: { key: "training", badge: "cruise" },

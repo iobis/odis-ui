@@ -2,7 +2,16 @@
 
 Faceted search UI for ODIS metadata records. Read-only FastAPI backend + Svelte frontend.
 
-Search is backed by the `odis_metadata` Elasticsearch index. See [`docs/faceted-search-plan.md`](docs/faceted-search-plan.md) and [`docs/data-sources-analysis.md`](docs/data-sources-analysis.md) for background.
+Search is backed by Elasticsearch. Two backends are supported (one at a time):
+
+| Backend id | Cluster | Corpus |
+|------------|---------|--------|
+| `elasticsearch` | ODIS metadata ES | Single `odis_metadata` index |
+| `gleaner` | Gleaner ES (`GLEANER_ELASTICSEARCH_URL`) | One index per source (`gleaner-obps`, …) |
+
+The UI header switcher selects the active backend per browser (sent as `X-Search-Backend`). Server default remains `SEARCH_BACKEND` in `.env`.
+
+See [`docs/faceted-search-plan.md`](docs/faceted-search-plan.md) and [`docs/data-sources-analysis.md`](docs/data-sources-analysis.md) for background.
 
 ## Prerequisites
 

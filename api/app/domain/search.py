@@ -129,6 +129,17 @@ class HealthStatus(BaseModel):
     )
 
 
+class BackendInfo(BaseModel):
+    id: str = Field(description="Backend identifier used in X-Search-Backend")
+    label: str = Field(description="Human-readable label for the UI switcher")
+    health: HealthStatus
+
+
+class BackendsResponse(BaseModel):
+    default: str = Field(description="Default backend from server configuration")
+    backends: list[BackendInfo]
+
+
 class RecordResponse(SearchItem):
     raw: dict[str, Any] | None = Field(
         default=None,

@@ -1,17 +1,19 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import FacetPanel from "./lib/FacetPanel.svelte";
-  import HealthIndicator from "./lib/HealthIndicator.svelte";
+  import BackendSwitcher from "./lib/BackendSwitcher.svelte";
   import SpatialExtentMap from "./lib/SpatialExtentMap.svelte";
   import TypeBadge from "./lib/TypeBadge.svelte";
   import TypePillBar from "./lib/TypePillBar.svelte";
   import SummaryText from "./lib/SummaryText.svelte";
   import ActiveFilters from "./lib/ActiveFilters.svelte";
   import {
-    getHealth,
+    getActiveBackend,
+    getBackends,
     recordUrl,
     search,
-    type HealthStatus,
+    setActiveBackend,
+    type BackendInfo,
     type SearchFacets,
     type SearchParams,
     type SearchResponse,
@@ -20,8 +22,10 @@
   import { buildSearchUrl, parseSearchParams, toggleValue } from "./lib/url";
   import "./app.css";
 
-  let health: HealthStatus | null = $state(null);
-  let healthError: string | null = $state(null);
+  let backends = $state<BackendInfo[]>([]);
+  let selectedBackend = $state<string | null>(getActiveBackend());
+  let backendsError: string | null = $state(null);
+  let backendsLoading = $state(false);
   let query = $state("");
   let selectedTypes = $state<string[]>([]);
   let selectedSources = $state<string[]>([]);
@@ -100,7 +104,7 @@
       } else {
         searchError = e instanceof Error ? e.message : "Search failed";
         results = null;
-        void refreshHealth();
+        void refreshBackends();
       }
     } finally {
       loading = false;
@@ -114,13 +118,22 @@
     await runSearch(false, true);
   }
 
-  async function refreshHealth() {
+  async function refreshBackends() {
+    backendsLoading = true;
     try {
-      health = await getHealth();
-      healthError = null;
+      const response = await getBackends();
+      backends = response.backends;
+      backendsError = null;
+      const ids = new Set(response.backends.map((backend) => backend.id));
+      if (!selectedBackend || !ids.has(selectedBackend)) {
+        selectedBackend = response.default;
+        setActiveBackend(response.default);
+      }
     } catch (e) {
-      healthError = e instanceof Error ? e.message : "Failed to reach API";
-      health = null;
+      backendsError = e instanceof Error ? e.message : "Failed to reach API";
+      backends = [];
+    } finally {
+      backendsLoading = false;
     }
   }
 
@@ -146,7 +159,7 @@
       { rootMargin: "240px" },
     );
 
-    void refreshHealth();
+    void refreshBackends();
 
     const onPopState = () => {
       applyFromUrl(new URL(window.location.href));
@@ -168,6 +181,21 @@
     observer.observe(node);
     return () => observer.unobserve(node);
   });
+
+  async function handleBackendSelect(backendId: string) {
+    if (backendId === selectedBackend) return;
+    selectedBackend = backendId;
+    setActiveBackend(backendId);
+    query = "";
+    selectedTypes = [];
+    selectedSources = [];
+    typeOptions = [];
+    sourceOptions = [];
+    page = 1;
+    results = null;
+    searchError = null;
+    await Promise.all([refreshBackends(), runSearch()]);
+  }
 
   async function handleSearch(event: Event) {
     event.preventDefault();
@@ -225,7 +253,13 @@
     <div class="page-header-top">
       <h1><a href="/" class="site-title" onclick={handleHomeClick}>ODIS Search</a></h1>
       <div class="page-header-actions">
-        <HealthIndicator {health} {healthError} />
+        <BackendSwitcher
+          {backends}
+          selectedId={selectedBackend}
+          loading={backendsLoading}
+          error={backendsError}
+          onSelect={handleBackendSelect}
+        />
         <a
           href="https://github.com/iobis/odis-ui"
           class="github-link"

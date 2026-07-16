@@ -142,6 +142,7 @@ def build_search_body(query: SearchQuery) -> dict[str, Any]:
                 200,
             ),
         },
+        "track_scores": True,
     }
 
     post_filter = _user_post_filter(query)
@@ -268,13 +269,14 @@ def map_document_to_item(
     *,
     highlight: dict[str, list[str]] | None = None,
     elasticsearch_document_url: str | None = None,
+    score: float | None = None,
 ) -> SearchItem:
     title = _field_value(source, "name", "schema:name") or "(untitled)"
     summary = _field_value(source, "description", "schema:description")
     datasource_id = _field_value(source, DATASOURCE_FIELD)
     normalized_type = _normalize_record_type(source.get("@type"))
     source_ref = SourceRef(id=datasource_id) if datasource_id else None
-    return SearchItem(
+    item = SearchItem(
         id=record_id,
         title=title,
         summary=summary,
@@ -285,6 +287,8 @@ def map_document_to_item(
         spatial=extract_spatial_extent(source),
         elasticsearch_document_url=elasticsearch_document_url,
     )
+    object.__setattr__(item, "_score", score if score is not None else 0.0)
+    return item
 
 
 def map_search_response(
@@ -307,6 +311,7 @@ def map_search_response(
                 source,
                 highlight=hit.get("highlight"),
                 elasticsearch_document_url=document_url_for(record_id) if document_url_for else None,
+                score=hit.get("_score") or 0.0,
             )
         )
 

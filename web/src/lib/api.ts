@@ -1,5 +1,6 @@
 const API_BASE = import.meta.env.VITE_API_URL ?? "/api/v1";
 const REQUEST_TIMEOUT_MS = 15_000;
+const BACKEND_STORAGE_KEY = "odis-search-backend";
 
 export interface HealthStatus {
   status: string;
@@ -7,6 +8,17 @@ export interface HealthStatus {
   index: string;
   index_reachable: boolean;
   detail?: string | null;
+}
+
+export interface BackendInfo {
+  id: string;
+  label: string;
+  health: HealthStatus;
+}
+
+export interface BackendsResponse {
+  default: string;
+  backends: BackendInfo[];
 }
 
 export interface SourceRef {
@@ -76,6 +88,21 @@ export interface SearchParams {
   size?: number;
 }
 
+let activeBackend: string | null = localStorage.getItem(BACKEND_STORAGE_KEY);
+
+export function getActiveBackend(): string | null {
+  return activeBackend;
+}
+
+export function setActiveBackend(backendId: string | null): void {
+  activeBackend = backendId;
+  if (backendId) {
+    localStorage.setItem(BACKEND_STORAGE_KEY, backendId);
+  } else {
+    localStorage.removeItem(BACKEND_STORAGE_KEY);
+  }
+}
+
 async function fetchJson<T>(path: string, params?: Record<string, string | string[]>): Promise<T> {
   const url = new URL(`${API_BASE}${path}`, window.location.origin);
   if (params) {
@@ -88,12 +115,17 @@ async function fetchJson<T>(path: string, params?: Record<string, string | strin
     }
   }
 
+  const headers: HeadersInit = {};
+  if (activeBackend) {
+    headers["X-Search-Backend"] = activeBackend;
+  }
+
   let response: Response;
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    response = await fetch(url, { signal: controller.signal });
+    response = await fetch(url, { signal: controller.signal, headers });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw new Error(
@@ -125,6 +157,10 @@ export function recordUrl(id: string): string {
 
 export function getHealth(): Promise<HealthStatus> {
   return fetchJson<HealthStatus>("/health");
+}
+
+export function getBackends(): Promise<BackendsResponse> {
+  return fetchJson<BackendsResponse>("/backends");
 }
 
 export function search(params: SearchParams = {}): Promise<SearchResponse> {

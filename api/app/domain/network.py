@@ -190,7 +190,8 @@ def classify_odiscat_hits(hits: list[dict[str, Any]]) -> NetworkStatusResponse:
 
         all_nodes.append(node)
 
-    all_nodes.sort(key=lambda n: n.name.casefold())
+    for nodes in (all_nodes, unresponsive, parsing_errors):
+        nodes.sort(key=lambda n: n.name.casefold())
 
     total_nodes = len(hits)
     unresponsive_count = len(unresponsive)

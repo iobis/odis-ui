@@ -841,6 +841,7 @@ body {
 }
 
 .network-summary > div {
+  position: relative;
   margin: 0;
   padding: 0;
   background: none;
@@ -872,8 +873,16 @@ body {
   text-decoration: none;
 }
 
-.network-stat-link:hover {
-  color: inherit;
+/* Make the whole summary box clickable, not just the number. */
+.network-stat-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.network-summary > div:hover .network-stat-link,
+.network-stat-link:focus-visible {
+  text-decoration: underline;
 }
 
 .network-page h2[id] {
@@ -897,10 +906,6 @@ body {
   display: block;
   height: 100%;
   border-radius: inherit;
-}
-
-.network-stat-bar-errors {
-  background: #d4a090;
 }
 
 .network-stat-bar-subset {

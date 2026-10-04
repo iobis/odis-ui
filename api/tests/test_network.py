@@ -104,3 +104,26 @@ def test_classify_truncates_long_error_lists() -> None:
     status = classify_odiscat_hits(hits)
     assert status.unresponsive[0].errors[-1] == "… and 3 more"
     assert len(status.unresponsive[0].errors) == 6
+
+
+def test_classify_sorts_error_lists_by_name() -> None:
+    def failing(node_id: str, name: str, pages_seen: int) -> dict:
+        return {
+            "_id": node_id,
+            "_source": {
+                "name": name,
+                "summoner_errors": 1,
+                "summoner_pages_seen": pages_seen,
+                "summoner_messages": ["error"],
+            },
+        }
+
+    hits = [
+        failing("d2", "zeta down", 0),
+        failing("p2", "Zeta Parse", 3),
+        failing("d1", "Alpha Down", 0),
+        failing("p1", "alpha parse", 3),
+    ]
+    status = classify_odiscat_hits(hits)
+    assert [n.name for n in status.unresponsive] == ["Alpha Down", "zeta down"]
+    assert [n.name for n in status.parsing_errors] == ["alpha parse", "Zeta Parse"]
